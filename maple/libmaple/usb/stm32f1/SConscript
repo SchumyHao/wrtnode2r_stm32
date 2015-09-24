@@ -1,0 +1,12 @@
+import os
+Import('rtconfig')
+from building import *
+
+src = []
+
+if GetDepend('RT_USING_MAPLE'):
+    src = Glob('*.c')
+    cwd = GetCurrentDir()
+    CPPPATH = cwd
+
+Return('src')

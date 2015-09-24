@@ -1,0 +1,12 @@
+import os
+Import('rtconfig')
+from building import *
+
+src = []
+
+if GetDepend('RT_USING_MAPLE'):
+    cwd = os.path.join(str(Dir('#')), 'maple', 'wirish', 'boards', 'wrtnode2')
+    src = [cwd + "/board.cpp"]
+    CPPPATH = [cwd + "/include"]
+
+Return('src')

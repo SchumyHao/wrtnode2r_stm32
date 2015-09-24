@@ -1,0 +1,15 @@
+import os
+Import('rtconfig')
+from building import *
+
+cwd = os.path.join(str(Dir('#')), 'maple')
+
+group = []
+
+if GetDepend('RT_USING_MAPLE'):
+    list = os.listdir(cwd)
+    for item in list:
+        if os.path.isfile(os.path.join(cwd, item, 'SConscript')):
+            group = group + SConscript(os.path.join(item, 'SConscript'))
+
+Return('group')

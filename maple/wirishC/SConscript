@@ -1,0 +1,14 @@
+import os
+Import('rtconfig')
+from building import *
+
+group = []
+
+if GetDepend('RT_USING_MAPLE'):
+    src = Glob('*.cpp')
+    cwd = GetCurrentDir()
+    CPPPATH = [cwd + '/include']
+
+    group = DefineGroup('wirishC', src, depend = ['RT_USING_MAPLE'], CPPPATH = CPPPATH)
+
+Return('group')

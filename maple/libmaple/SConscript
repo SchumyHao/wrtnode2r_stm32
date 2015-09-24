@@ -1,0 +1,22 @@
+import os
+Import('rtconfig')
+from building import *
+
+group = []
+
+if GetDepend('RT_USING_MAPLE'):
+    src = Glob('*.c')
+    cwd = os.path.join(str(Dir('#')), 'maple', 'libmaple')
+    CPPPATH = [cwd, os.path.join(cwd, 'include'), os.path.join(cwd, 'stm32f1', 'include'),
+    os.path.join(cwd, 'usb', 'stm32f1'), os.path.join(cwd, 'usb', 'usb_lib')]
+
+    # search in the file system implementation
+    list = os.listdir(cwd)
+
+    for item in list:
+        if os.path.isfile(os.path.join(cwd, item, 'SConscript')):
+            src = src + SConscript(os.path.join(item, 'SConscript'))
+
+    group = DefineGroup('libmaple', src, depend = ['RT_USING_MAPLE'], CPPPATH = CPPPATH)
+
+Return('group')

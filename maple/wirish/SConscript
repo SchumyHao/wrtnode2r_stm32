@@ -1,0 +1,22 @@
+import os
+Import('rtconfig')
+from building import *
+
+group = []
+
+if GetDepend('RT_USING_MAPLE'):
+    src = Glob('*.cpp')
+    cwd = os.path.join(str(Dir('#')), 'maple', 'wirish')
+    CPPPATH = [cwd, os.path.join(cwd, 'include'), os.path.join(cwd, 'boards', 'wrtnode2', 'include')]
+
+    # search in the file system implementation
+    list = os.listdir(cwd)
+
+    for item in list:
+        if os.path.isfile(os.path.join(cwd, item, 'SConscript')):
+            src = src + SConscript(os.path.join(item, 'SConscript'))
+
+    CPPDEFINES = ['MAPLE_USE_WIRISHC']
+    group = DefineGroup('wirish', src, depend = ['RT_USING_MAPLE'], CPPPATH = CPPPATH, CPPDEFINES = CPPDEFINES)
+
+Return('group')

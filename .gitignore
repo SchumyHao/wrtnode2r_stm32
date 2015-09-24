@@ -1,0 +1,9 @@
+bck
+build
+*.pyc
+*.map
+*.icf
+*.sct
+*.bin
+.sconsign.dblite
+*.elf

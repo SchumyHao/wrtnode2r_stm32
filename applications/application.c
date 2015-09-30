@@ -73,13 +73,13 @@ FINSH_FUNCTION_EXPORT_ALIAS(cmd_digitalRead, __cmd_digitalRead, Read digital pin
 //FINSH_FUNCTION_EXPORT_ALIAS(cmd_digitalWrite, __cmd_digitalWrite, Write digital pin.);
 #endif
 
-#if 0
-#include <core_cm3.h>
+extern void __set_PRIMASK(uint32_t priMask);
+extern void __set_PSP(uint32_t topOfProcStack);
 void cmd_reset(void)
 {
     rt_uint32_t usrAddr = 0x08000000;
     typedef void (*funcPtr)(void);
-    typedef volatile rt_uint32_t vu32;
+    typedef volatile uint32_t vu32;
     __set_PRIMASK(0); //关闭所有中断，可以没有
     if(((*(vu32*)usrAddr)&0x2FFE0000)==0x20000000) //判断地址是不是在RAM之内
     {
@@ -89,45 +89,5 @@ void cmd_reset(void)
         usrMain1();                                /* go! */
     }
 }
-#else
-extern _edata;
-#define STACK_TOP _edata
-#define EXC_RETURN 0xFFFFFFF9
-#define DEFAULT_CPSR 0x61000000
-#define RESET_DELAY 100000
-static void wait_reset(void) {
-  rt_thread_delay(RESET_DELAY/RT_TICK_PER_SECOND);
-  nvic_sys_reset();
-}
-
-void cmd_reset(void)
-{
-            // Got the magic sequence -> reset, presumably into the bootloader.
-            // Return address is wait_reset, but we must set the thumb bit.
-						//TODO: Fix it
-            uintptr_t target = (uintptr_t)wait_reset | 0x1;
-            asm volatile("mov r0, %[stack_top]      \n\t" // Reset stack
-                         "mov sp, r0                \n\t"
-                         "mov r0, #1                \n\t"
-                         "mov r1, %[target_addr]    \n\t"
-                         "mov r2, %[cpsr]           \n\t"
-                         "push {r2}                 \n\t" // Fake xPSR
-                         "push {r1}                 \n\t" // PC target addr
-                         "push {r0}                 \n\t" // Fake LR
-                         "push {r0}                 \n\t" // Fake R12
-                         "push {r0}                 \n\t" // Fake R3
-                         "push {r0}                 \n\t" // Fake R2
-                         "push {r0}                 \n\t" // Fake R1
-                         "push {r0}                 \n\t" // Fake R0
-                         "mov lr, %[exc_return]     \n\t"
-                         "bx lr"
-                         :
-                         : [stack_top] "r" (STACK_TOP),
-                           [target_addr] "r" (target),
-                           [exc_return] "r" (EXC_RETURN),
-                           [cpsr] "r" (DEFAULT_CPSR)
-                         : "r0", "r1", "r2");
-}
-#endif
 
 FINSH_FUNCTION_EXPORT_ALIAS(cmd_reset, __cmd_reset, reset to bootloader.);

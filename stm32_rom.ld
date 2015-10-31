@@ -7,8 +7,8 @@
 /* Program Entry, set to mark it as "used" and avoid gc */
 MEMORY
 {
-    CODE (rx) : ORIGIN = 0x08001000, LENGTH = 0x00010000
-    DATA (rw) : ORIGIN = 0x20000000, LENGTH = 0x00005000
+    CODE (rx) : ORIGIN = 0x08001000, LENGTH = 0x0000F000
+    DATA (rw) : ORIGIN = 0x20000800, LENGTH = 0x00004800
 }
 ENTRY(Reset_Handler)
 _system_stack_size = 0x400;

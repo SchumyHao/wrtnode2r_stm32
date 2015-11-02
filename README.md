@@ -42,4 +42,4 @@ There is an example in the linux.In the windows you can see the rt-thread's docu
 
 ##### clean
 
-	scons clean
+	scons --clean

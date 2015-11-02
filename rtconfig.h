@@ -64,10 +64,10 @@
 /* SECTION: Console options */
 #define RT_USING_CONSOLE
 /* the buffer size of console*/
-#define RT_CONSOLEBUF_SIZE	128
+#define RT_CONSOLEBUF_SIZE	256
 
 // <string name="RT_CONSOLE_DEVICE_NAME" description="console device name" default="uart3" />
-#define RT_CONSOLE_DEVICE_NAME	"uart1"
+#define RT_CONSOLE_DEVICE_NAME	"bridge"
 // </section>
 
 // <section name="RT_USING_COMPONENTS_INIT" description="Using components init" default="false" >

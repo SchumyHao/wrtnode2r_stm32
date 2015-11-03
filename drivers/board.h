@@ -19,7 +19,7 @@
 #include <stdbool.h>
 
 void rt_hw_board_init(void);
-void rt_hw_usart_init(void);
+//void rt_hw_usart_init(void);
 void wrtnode2r_spi_bridge_init(const char* name);
 
 #define STM32_SRAM_SIZE         20

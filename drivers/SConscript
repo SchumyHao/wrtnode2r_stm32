@@ -8,7 +8,6 @@ cwd     = os.path.join(str(Dir('#')), 'drivers')
 src = Split("""
 board.c
 platform.c
-usart.c
 spi_bridge.c
 """)
 

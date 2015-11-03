@@ -89,7 +89,7 @@ void rt_hw_board_init(void)
     /* Configure the SysTick */
     systick_init( CLOCK_SPEED_HZ / RT_TICK_PER_SECOND );
 
-    rt_hw_usart_init();
+    //rt_hw_usart_init();
 }
 
 /*@}*/

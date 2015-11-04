@@ -11,7 +11,7 @@ MEMORY
     DATA (rw) : ORIGIN = 0x20000800, LENGTH = 0x00004800
 }
 ENTRY(Reset_Handler)
-_system_stack_size = 0x400;
+_system_stack_size = 0xc00;
 
 SECTIONS
 {
@@ -38,14 +38,12 @@ SECTIONS
         __vsymtab_start = .;
         KEEP(*(VSymTab))
         __vsymtab_end = .;
-        . = ALIGN(4);
 
         /* section information for initial. */
         . = ALIGN(4);
         __rt_init_start = .;
         KEEP(*(SORT(.rti_fn*)))
         __rt_init_end = .;
-        . = ALIGN(4);
 
         . = ALIGN(4);
         _etext = .;
@@ -63,6 +61,16 @@ SECTIONS
         KEEP (*(SORT(.init_array.*)))
         KEEP (*(.init_array))
         PROVIDE(__ctors_end__ = .);
+    } > CODE
+
+    /* for C++ */
+    . = ALIGN(4);
+    .dtors :
+    {
+        PROVIDE(__dtors_start__ = .);
+        KEEP(*(SORT(.dtors.*)))
+        KEEP(*(.dtors))
+        PROVIDE(__dtors_end__ = .);
     } > CODE
 
     /* .ARM.exidx is sorted, so has to go in its own output section.  */
@@ -99,16 +107,6 @@ SECTIONS
         . = ALIGN(4);
         _estack = .;
     } >DATA
-
-    /* for C++ */
-    . = ALIGN(4);
-    .dtors :
-    {
-        PROVIDE(__dtors_start__ = .);
-        KEEP(*(SORT(.dtors.*)))
-        KEEP(*(.dtors))
-        PROVIDE(__dtors_end__ = .);
-    } > CODE
 
     __bss_start = .;
     .bss :

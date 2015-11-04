@@ -96,10 +96,7 @@ static void wrtnode2r_spi_stm32_set_read_buf_data(rt_uint8_t ch)
 
 static rt_err_t wrtnode2r_spi_bridge_open(rt_device_t dev, rt_uint16_t oflag)
 {
-    if(!(oflag &RT_DEVICE_FLAG_INT_RX)) {
-        return -RT_EIO;
-    }
-
+    dev->flag = oflag | RT_DEVICE_FLAG_INT_RX;
     dev->open_flag = oflag & 0xff;
 
     rt_ringbuffer_init(&spi_bridge.read_buf, spi_bridge.read_buf_pool, WRTNODE2R_SPI_MAX_DATA_LEN);
@@ -178,7 +175,8 @@ void SPI1_IRQHandler(void) {
     static rt_uint8_t got_cmd;
     static rt_uint8_t cmd;
     rt_interrupt_enter();
-    if(spi_is_rx_nonempty(spi1.c_dev())) {
+    if((!(GPIOA_BASE->IDR & (1<<4))) &&
+       (spi_is_rx_nonempty(spi1.c_dev()))) {
         nvic_irq_disable(NVIC_SPI1);
         if(got_cmd) {
             wrtnode2r_spi_bridge_rx_isr(cmd);

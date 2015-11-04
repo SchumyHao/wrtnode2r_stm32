@@ -146,13 +146,12 @@ void usart_foreach(void (*fn)(usart_dev*)) {
 /*
  * Interrupt handlers.
  */
-/*  used in rtt usaer
+
 void USART1_IRQHandler(void) {
     rt_interrupt_enter();
     usart_irq(&usart1_rb, USART1_BASE);
     rt_interrupt_leave();
 }
-*/
 
 void USART2_IRQHandler(void) {
     rt_interrupt_enter();

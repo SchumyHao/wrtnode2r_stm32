@@ -138,54 +138,60 @@ void wrtnode2r_spi_bridge_init(const char* name)
     rt_device_register(&spi_bridge.parent, name, RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE);
 }
 
-static void wrtnode2r_spi_bridge_rx_isr(rt_uint8_t cmd)
+static void wrtnode2r_spi_bridge_rx_isr(rt_uint8_t cmd, rt_uint8_t is_cmd)
 {
-    switch(cmd) {
-        rt_uint8_t ch = 0;
-        case WRTNODE2R_SPI_CMD_GET_STATUS:
-            ch = wrtnode2r_spi_stm32_get_status();
-            spi1.write(ch);
-            break;
-        case WRTNODE2R_SPI_CMD_7688_READ_FROM_SRM32_LEN:
-            ch = wrtnode2r_spi_stm32_get_write_buf_len();
-            spi1.write(ch);
-            break;
-        case WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32_LEN:
-            ch = spi1.read();
-            break;
-        case WRTNODE2R_SPI_CMD_7688_READ_FROM_STM32:
-            ch = wrtnode2r_spi_stm32_get_write_buf_data();
-            spi1.write(ch);
-            break;
-        case WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32:
-            ch = spi1.read();
-            wrtnode2r_spi_stm32_set_read_buf_data(ch);
-            if('\n' == ch) {
-                if(spi_bridge.parent.rx_indicate != RT_NULL) {
-                    spi_bridge.parent.rx_indicate(&spi_bridge.parent, wrtnode2r_spi_stm32_get_read_buf_len());
+    if(is_cmd)
+        switch(cmd) {
+            rt_uint8_t ch = 0;
+            case WRTNODE2R_SPI_CMD_GET_STATUS:
+                ch = wrtnode2r_spi_stm32_get_status();
+                spi1.write(ch);
+                break;
+            case WRTNODE2R_SPI_CMD_7688_READ_FROM_SRM32_LEN:
+                ch = wrtnode2r_spi_stm32_get_write_buf_len();
+                spi1.write(ch);
+                break;
+            case WRTNODE2R_SPI_CMD_7688_READ_FROM_STM32:
+                ch = wrtnode2r_spi_stm32_get_write_buf_data();
+                spi1.write(ch);
+                break;
+            case WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32_LEN:
+            case WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32:
+            default:
+                break;
+        }
+    else
+        switch(cmd) {
+            rt_uint8_t ch = spi1.read();
+            case WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32:
+                wrtnode2r_spi_stm32_set_read_buf_data(ch);
+                if('\n' == ch) {
+                    if(spi_bridge.parent.rx_indicate != RT_NULL) {
+                        spi_bridge.parent.rx_indicate(&spi_bridge.parent, wrtnode2r_spi_stm32_get_read_buf_len());
+                    }
                 }
-            }
-            break;
-        default:
-            break;
-    }
+                break;
+            case WRTNODE2R_SPI_CMD_GET_STATUS:
+            case WRTNODE2R_SPI_CMD_7688_READ_FROM_SRM32_LEN:
+            case WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32_LEN:
+            case WRTNODE2R_SPI_CMD_7688_READ_FROM_STM32:
+            default:
+                break;
+        }
 }
 
 void SPI1_IRQHandler(void) {
-    static rt_uint8_t got_cmd;
+    static rt_uint8_t is_cmd;
     static rt_uint8_t cmd;
+
     rt_interrupt_enter();
     if(spi_is_rx_nonempty(spi1.c_dev())) {
         nvic_irq_disable(NVIC_SPI1);
-        if(got_cmd) {
-            wrtnode2r_spi_bridge_rx_isr(cmd);
-            cmd = 0;
-            got_cmd = 0;
-        }
-        else {
+        if(!is_cmd) {
             cmd = spi1.read();
-            got_cmd = 1;
         }
+        is_cmd = !is_cmd;
+        wrtnode2r_spi_bridge_rx_isr(cmd, is_cmd);
         nvic_irq_enable(NVIC_SPI1);
     }
     rt_interrupt_leave();

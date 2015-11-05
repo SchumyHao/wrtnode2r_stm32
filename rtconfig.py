@@ -13,7 +13,7 @@ if os.getenv('RTT_CC'):
 
 if  CROSS_TOOL == 'gcc':
         PLATFORM         = 'gcc'
-        EXEC_PATH         = '/Users/schumy/gcc-arm-none-eabi/bin'
+        EXEC_PATH         = '/Users/schumy/arm-gcc/bin'
 elif CROSS_TOOL == 'keil':
         PLATFORM         = 'armcc'
         EXEC_PATH         = ''
@@ -24,7 +24,7 @@ elif CROSS_TOOL == 'iar':
 if os.getenv('RTT_EXEC_PATH'):
         EXEC_PATH = os.getenv('RTT_EXEC_PATH')
 
-BUILD = 'debug'
+BUILD = ''
 STM32_TYPE = 'STM32F10X_MD'
 
 if PLATFORM == 'gcc':
@@ -40,7 +40,7 @@ if PLATFORM == 'gcc':
     OBJDUMP = PREFIX + 'objdump'
     OBJCPY = PREFIX + 'objcopy'
 
-    DEVICE = ' -mcpu=cortex-m3 -march=armv7-m -mthumb -DMCU_STM32F103T8 -DBOOTLOADER_wrtnode '
+    DEVICE = ' -mcpu=cortex-m3 -march=armv7-m -mthumb -DMCU_STM32F103T8 -DBOOTLOADER_wrtnode'
     CFLAGS = DEVICE + ' -ffunction-sections -fdata-sections'
     CXXFLAGS = DEVICE + ' -fno-exceptions -fno-rtti -DMAPLE_USE_WIRISHC'
     AFLAGS = ' -c' + DEVICE + ' -x assembler-with-cpp'
@@ -53,7 +53,7 @@ if PLATFORM == 'gcc':
         CFLAGS += ' -Og -gdwarf-2'
         AFLAGS += ' -gdwarf-2'
     else:
-        CFLAGS += ' -O2'
+        CFLAGS += ' -O3'
 
     POST_ACTION = OBJCPY + ' -O binary $TARGET rtthread.bin\n' + SIZE + ' $TARGET \n'
 

@@ -160,9 +160,9 @@ static void wrtnode2r_spi_bridge_rx_isr(rt_uint8_t cmd, rt_uint8_t is_cmd)
             default:
                 break;
         }
-    else
+    else {
+        rt_uint8_t ch = spi1.read();
         switch(cmd) {
-            rt_uint8_t ch = spi1.read();
             case WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32:
                 wrtnode2r_spi_stm32_set_read_buf_data(ch);
                 if('\n' == ch) {
@@ -178,6 +178,7 @@ static void wrtnode2r_spi_bridge_rx_isr(rt_uint8_t cmd, rt_uint8_t is_cmd)
             default:
                 break;
         }
+    }
 }
 
 void SPI1_IRQHandler(void) {

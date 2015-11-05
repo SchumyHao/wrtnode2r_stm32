@@ -175,8 +175,7 @@ void SPI1_IRQHandler(void) {
     static rt_uint8_t got_cmd;
     static rt_uint8_t cmd;
     rt_interrupt_enter();
-    if((!(GPIOA_BASE->IDR & (1<<4))) &&
-       (spi_is_rx_nonempty(spi1.c_dev()))) {
+    if(spi_is_rx_nonempty(spi1.c_dev())) {
         nvic_irq_disable(NVIC_SPI1);
         if(got_cmd) {
             wrtnode2r_spi_bridge_rx_isr(cmd);

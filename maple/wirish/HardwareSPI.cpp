@@ -293,6 +293,7 @@ static void enable_device(spi_dev *dev,
     if (as_master) {
         spi_master_enable(dev, baud, mode, cfg_flags);
     } else {
+        cfg_flags &= ~SPI_SW_SLAVE;
         spi_slave_enable(dev, mode, cfg_flags);
     }
 }

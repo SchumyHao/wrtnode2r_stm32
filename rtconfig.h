@@ -76,7 +76,7 @@
 
 /* SECTION: finsh, a C-Express shell */
 #define RT_USING_FINSH
-/* Using symbol table */
+#define FINSH_USING_HISTORY    0
 #define FINSH_THREAD_PRIORITY  6
 #define FINSH_USING_SYMTAB
 #define FINSH_USING_DESCRIPTION

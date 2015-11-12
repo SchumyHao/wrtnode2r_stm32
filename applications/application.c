@@ -35,13 +35,16 @@ void rt_init_thread_entry(void* parameter)
         extern void rt_platform_init(void);
         rt_platform_init();
     }
+#ifdef RT_USING_FINSH
+    /* initialize finsh */
+    finsh_system_init();
+    finsh_set_device(RT_CONSOLE_DEVICE_NAME);
+    rt_thread_delay(10); /* wait finsh thread init OK */
+    if(rt_strncmp(RT_CONSOLE_DEVICE_NAME, "bridge", sizeof("bridge")) == 0)
+        finsh_set_echo(0);
+#endif
     rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
     rt_show_version();
-#ifdef RT_USING_FINSH
-	/* initialize finsh */
-	finsh_system_init();
-	finsh_set_device(RT_CONSOLE_DEVICE_NAME);
-#endif
 }
 
 int rt_application_init(void)

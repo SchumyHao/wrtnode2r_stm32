@@ -20,7 +20,7 @@
 #define WRTNODE2R_SPI_READ_ALL                         (0xFF)
 
 /************  WRTnode2r SPI Bridge  **************/
-#define WRTNODE2R_SPI_MAX_DATA_LEN         (255)
+#define WRTNODE2R_SPI_MAX_DATA_LEN         (1024)
 
 struct wrtnode2r_spi_bridge {
     struct rt_device parent;

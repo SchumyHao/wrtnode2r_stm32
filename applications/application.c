@@ -18,6 +18,8 @@
 /*@{*/
 
 #include <rtthread.h>
+#include <stdint.h>
+#include <string.h>
 #include "board.h"
 
 #ifdef RT_USING_FINSH
@@ -59,22 +61,47 @@ int rt_application_init(void)
     return 0;
 }
 
-#if 0
 int cmd_digitalRead(int argc, char** argv)
 {
     int ret = 0;
     int pin;
-    scanf(argv[0], "%d", &pin);
-    pin = atoi(argv[0]);
-
-    ret = digitalRead((rt_uint8_t)pin);
+    if(argc == 2) {
+        sscanf(argv[1], "%d", &pin);
+        ret = digitalRead((rt_uint8_t)pin);
+    }
     rt_kprintf("%d\n", ret);
-}
 
-FINSH_FUNCTION_EXPORT_ALIAS(cmd_digitalRead, __cmd_digitalRead, Read digital pin.);
-//FINSH_FUNCTION_EXPORT_ALIAS(cmd_pinMode, __cmd_pinMode, Setup pin mode.);
-//FINSH_FUNCTION_EXPORT_ALIAS(cmd_digitalWrite, __cmd_digitalWrite, Write digital pin.);
-#endif
+    return ret;
+}
+MSH_CMD_EXPORT_ALIAS(cmd_digitalRead, digitalRead, Read digital pin.);
+
+int cmd_pinMode(int argc, char** argv)
+{
+    int pin;
+		int mode;
+    if(argc == 3) {
+        sscanf(argv[1], "%d", &pin);
+        sscanf(argv[2], "%d", &mode);
+        pinMode((uint8_t)pin, (int)mode);
+    }
+
+    return 0;
+}
+MSH_CMD_EXPORT_ALIAS(cmd_pinMode, pinMode, Setup pin mode.);
+
+int cmd_digitalWrite(int argc, char** argv)
+{
+    int pin;
+		int val;
+    if(argc == 3) {
+        sscanf(argv[1], "%d", &pin);
+        sscanf(argv[2], "%d", &val);
+        digitalWrite((uint8_t)pin, (uint8_t)val);
+    }
+
+    return 0;
+}
+MSH_CMD_EXPORT_ALIAS(cmd_digitalWrite, digitalWrite, Write digital pin.);
 
 extern void __set_PRIMASK(uint32_t priMask);
 extern void __set_PSP(uint32_t topOfProcStack);
@@ -92,5 +119,4 @@ void cmd_reset(void)
         usrMain1();                                /* go! */
     }
 }
-
-FINSH_FUNCTION_EXPORT_ALIAS(cmd_reset, __cmd_reset, reset to bootloader.);
+MSH_CMD_EXPORT_ALIAS(cmd_reset, reset, reset to bootloader.);

@@ -44,7 +44,7 @@ if PLATFORM == 'gcc':
     CFLAGS = DEVICE + ' -ffunction-sections -fdata-sections'
     CXXFLAGS = DEVICE + ' -fno-exceptions -fno-rtti -DMAPLE_USE_WIRISHC'
     AFLAGS = ' -c' + DEVICE + ' -x assembler-with-cpp'
-    LFLAGS = DEVICE + ' -Wl,--gc-sections,-Map=rtthread-stm32.map,-cref,-u,Reset_Handler -T stm32_rom.ld'
+    LFLAGS = DEVICE + ' -nostdlib -Wl,--gc-sections,-Map=rtthread-stm32.map,-cref,-u,Reset_Handler -T stm32_rom.ld'
 
     CPATH = ''
     LPATH = ''

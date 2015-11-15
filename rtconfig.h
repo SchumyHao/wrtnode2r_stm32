@@ -91,13 +91,9 @@
 // <bool name="RT_USING_BSP_CMSIS" description="Using CMSIS in BSP" default="true" />
 #define RT_USING_BSP_CMSIS
 
-#define RT_USING_RYM
-
 #define RT_USING_MAPLE
 
-#define RT_USING_SERIAL
-
 #define RT_USING_CPLUSPLUS
-#define RT_USING_LIBC
+//#define RT_USING_LIBC
 
 #endif

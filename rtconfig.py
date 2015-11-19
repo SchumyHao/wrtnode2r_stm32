@@ -53,7 +53,7 @@ if PLATFORM == 'gcc':
         CFLAGS += ' -Og -gdwarf-2'
         AFLAGS += ' -gdwarf-2'
     else:
-        CFLAGS += ' -O3'
+        CFLAGS += ' -Og'
 
     POST_ACTION = OBJCPY + ' -O binary $TARGET rtthread.bin\n' + SIZE + ' $TARGET \n'
 

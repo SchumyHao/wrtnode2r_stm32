@@ -21,6 +21,7 @@
 
 /************  WRTnode2r SPI Bridge  **************/
 #define WRTNODE2R_SPI_MAX_DATA_LEN         (1024)
+#define WRTNODE2R_SPI_ONE_FRAME_MAX_LEN    (255)
 
 struct wrtnode2r_spi_bridge {
     struct rt_device parent;
@@ -73,7 +74,8 @@ static rt_uint8_t wrtnode2r_spi_stm32_get_status(void)
 
 static rt_uint8_t wrtnode2r_spi_stm32_get_write_buf_len(void)
 {
-    return (rt_uint8_t)rt_ringbuffer_data_len(&spi_bridge.write_buf);
+    rt_uint16_t len = rt_ringbuffer_data_len(&spi_bridge.write_buf);
+    return (len > WRTNODE2R_SPI_ONE_FRAME_MAX_LEN)? WRTNODE2R_SPI_ONE_FRAME_MAX_LEN: len;
 }
 
 static rt_uint8_t wrtnode2r_spi_stm32_get_write_buf_data(void)

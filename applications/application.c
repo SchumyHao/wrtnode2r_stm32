@@ -61,6 +61,8 @@ int rt_application_init(void)
     return 0;
 }
 
+#include "wirish/wirish.h"
+
 int cmd_digitalRead(int argc, char** argv)
 {
     int ret = 0;
@@ -78,10 +80,39 @@ MSH_CMD_EXPORT_ALIAS(cmd_digitalRead, digitalRead, Read digital pin.);
 int cmd_pinMode(int argc, char** argv)
 {
     int pin;
-		int mode;
+    int mode;
     if(argc == 3) {
         sscanf(argv[1], "%d", &pin);
-        sscanf(argv[2], "%d", &mode);
+        if(strcmp(argv[2], "OUTPUT") == 0) {
+            mode = OUTPUT;
+        }
+        else if(strcmp(argv[2], "OUTPUT_OPEN_DRAIN") == 0) {
+            mode = OUTPUT_OPEN_DRAIN;
+        }
+        else if(strcmp(argv[2], "INPUT") == 0) {
+            mode = INPUT;
+        }
+        else if(strcmp(argv[2], "INPUT_ANALOG") == 0) {
+            mode = INPUT_ANALOG;
+        }
+        else if(strcmp(argv[2], "INPUT_PULLUP") == 0) {
+            mode = INPUT_PULLUP;
+        }
+        else if(strcmp(argv[2], "INPUT_PULLDOWN") == 0) {
+            mode = INPUT_PULLDOWN;
+        }
+        else if(strcmp(argv[2], "INPUT_FLOATING") == 0) {
+            mode = INPUT_FLOATING;
+        }
+        else if(strcmp(argv[2], "PWM") == 0) {
+            mode = PWM;
+        }
+        else if(strcmp(argv[2], "PWM_OPEN_DRAIN") == 0) {
+            mode = PWM_OPEN_DRAIN;
+        }
+        else{
+            sscanf(argv[2], "%d", &mode);
+        }
         pinMode((uint8_t)pin, (int)mode);
     }
 
@@ -92,10 +123,18 @@ MSH_CMD_EXPORT_ALIAS(cmd_pinMode, pinMode, Setup pin mode.);
 int cmd_digitalWrite(int argc, char** argv)
 {
     int pin;
-		int val;
+    int val;
     if(argc == 3) {
         sscanf(argv[1], "%d", &pin);
-        sscanf(argv[2], "%d", &val);
+        if(strcmp(argv[2], "HIGH") == 0) {
+            val = HIGH;
+        }
+        else if(strcmp(argv[2], "LOW") == 0) {
+            val = LOW;
+        }
+        else {
+            sscanf(argv[2], "%d", &val);
+        }
         digitalWrite((uint8_t)pin, (uint8_t)val);
     }
 

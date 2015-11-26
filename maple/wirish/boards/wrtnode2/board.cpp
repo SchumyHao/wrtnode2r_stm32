@@ -50,7 +50,6 @@
 void boardInit(void) {
 }
 
-
 // Pin map: this lets the basic I/O functions (digitalWrite(),
 // analogRead(), pwmWrite()) translate from pin numbers to STM32
 // peripherals.
@@ -65,45 +64,42 @@ void boardInit(void) {
 // - ADC device, or NULL if none
 // - ADC channel, or ADCx if none
 extern const stm32_pin_info PIN_MAP[BOARD_NR_GPIO_PINS] = {
-    PMAP_ROW(GPIOB,   0, TIMER3,  3, ADC1,    8), /* D0/PB0 */
-    PMAP_ROW(GPIOB,   1, TIMER3,  4, ADC1,    9), /* D1/PB1 */
-    PMAP_ROW(GPIOB,   2,   NULL,  0, NULL, ADCx), /* D2/PB2 */
-    PMAP_ROW(GPIOB,   3,   NULL,  0, NULL, ADCx), /* D3/PB3 */
-    PMAP_ROW(GPIOB,   4,   NULL,  0, NULL, ADCx), /* D4/PB4 */
-    PMAP_ROW(GPIOB,   5,   NULL,  0, NULL, ADCx), /* D5/PB5 */
-    PMAP_ROW(GPIOB,   6, TIMER4,  1, NULL, ADCx), /* D6/PB6 */
-    PMAP_ROW(GPIOB,   7, TIMER4,  2, NULL, ADCx), /* D7/PB7 */
-    PMAP_ROW(GPIOA,   0, TIMER2,  1, ADC1,    0), /* D8/PA0 */
-    PMAP_ROW(GPIOA,   1, TIMER2,  2, ADC1,    1), /* D9/PA1 */
-    PMAP_ROW(GPIOA,   2, TIMER2,  3, ADC1,    2), /* D10/PA2 */
-    PMAP_ROW(GPIOA,   3, TIMER2,  4, ADC1,    3), /* D11/PA3 */
-    PMAP_ROW(GPIOA,   8, TIMER1,  1, NULL, ADCx), /* D12/PA8 */
-    PMAP_ROW(GPIOA,   9, TIMER1,  2, NULL, ADCx), /* D13/PA9 */
-    PMAP_ROW(GPIOA,  10, TIMER1,  3, NULL, ADCx), /* D14/PA10 */
-    PMAP_ROW(GPIOA,  11, TIMER1,  4, NULL, ADCx), /* D15/PA11 */
-    PMAP_ROW(GPIOA,  12,   NULL,  0, NULL, ADCx), /* D16/PA12 */
-    PMAP_ROW(GPIOA,  13,   NULL,  0, NULL, ADCx), /* D17/PA13 */
-    PMAP_ROW(GPIOA,  14,   NULL,  0, NULL, ADCx), /* D18/PA14 */
-    PMAP_ROW(GPIOA,  15,   NULL,  0, NULL, ADCx), /* D19/PA15 */
-    PMAP_ROW(GPIOA,   4,   NULL,  0, NULL, ADCx), /* D20/PA4 */
-    PMAP_ROW(GPIOA,   5,   NULL,  0, NULL, ADCx), /* D21/PA5 */
-    PMAP_ROW(GPIOA,   6,   NULL,  0, NULL, ADCx), /* D22/PA6 */
-    PMAP_ROW(GPIOA,   7,   NULL,  0, NULL, ADCx), /* D23/PA7 */
+    PMAP_ROW(GPIOA,   0, TIMER2,  1, ADC1,    0), /* D0/PA0 */
+    PMAP_ROW(GPIOA,   1, TIMER2,  2, ADC1,    1), /* D1/PA1 */
+    PMAP_ROW(GPIOA,   8, TIMER1,  1, NULL, ADCx), /* D2/PA8 */
+    PMAP_ROW(GPIOB,   2,   NULL,  0, NULL, ADCx), /* D3/PB2 */
+    PMAP_ROW(GPIOA,   3, TIMER2,  4, ADC1,    3), /* D4/PA3 */
+    PMAP_ROW(GPIOB,   0, TIMER3,  3, ADC1,    8), /* D5/PB0 */
+    PMAP_ROW(GPIOA,  11, TIMER1,  4, NULL, ADCx), /* D6/PA11 */
+    PMAP_ROW(GPIOA,  12,   NULL,  0, NULL, ADCx), /* D7/PA12 */
+    PMAP_ROW(GPIOB,   5,   NULL,  0, NULL, ADCx), /* D8/PB5 */
+    PMAP_ROW(GPIOA,  10, TIMER1,  3, NULL, ADCx), /* D9/PA10 */
+    PMAP_ROW(GPIOA,   9, TIMER1,  2, NULL, ADCx), /* D10/PA9 */
+    PMAP_ROW(GPIOB,   6, TIMER4,  1, NULL, ADCx), /* D11/PB6 */
+    PMAP_ROW(GPIOB,   7, TIMER4,  2, NULL, ADCx), /* D12/PB7 */
+    PMAP_ROW(GPIOB,   1, TIMER3,  4, ADC1,    9), /* D13/PB1 */
+    PMAP_ROW(GPIOA,   2, TIMER2,  3, ADC1,    2), /* D14/PA2 */
+
+    PMAP_ROW(GPIOA,   4,   NULL,  0, NULL, ADCx), /* D15/PA4 */
+    PMAP_ROW(GPIOA,   5,   NULL,  0, NULL, ADCx), /* D16/PA5 */
+    PMAP_ROW(GPIOA,   6,   NULL,  0, NULL, ADCx), /* D17/PA6 */
+    PMAP_ROW(GPIOA,   7,   NULL,  0, NULL, ADCx), /* D18/PA7 */
 };
 
 // Array of pins you can use for pwmWrite(). Keep it in Flash because
 // it doesn't change, and so we don't waste RAM.
 extern const uint8 boardPWMPins[] __FLASH__ = {
-    0, 1, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+    0, 1, 2, 4, 5, 6, 9, 10, 11, 12, 13, 14
 };
 
 // Array of pins you can use for analogRead().
 extern const uint8 boardADCPins[] __FLASH__ = {
-    0, 1, 8, 9, 10, 11
+    0, 1, 4, 5, 13, 14
 };
 
 // Array of pins that the board uses for something special. Other than
 // the button and the LED, it's usually best to leave these pins alone
 // unless you know what you're doing.
 extern const uint8 boardUsedPins[] __FLASH__ = {
+    15, 16, 17, 18
 };

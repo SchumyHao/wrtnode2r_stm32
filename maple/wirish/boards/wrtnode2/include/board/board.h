@@ -46,24 +46,24 @@
 #define BOARD_NR_USARTS         2
 
 /* USART pin numbers. */
-#define BOARD_USART1_TX_PIN     13
-#define BOARD_USART1_RX_PIN     14
-#define BOARD_USART2_TX_PIN     10
-#define BOARD_USART2_RX_PIN     11
+#define BOARD_USART1_TX_PIN     10
+#define BOARD_USART1_RX_PIN     9
+#define BOARD_USART2_TX_PIN     14
+#define BOARD_USART2_RX_PIN     4
 
 /* Number of SPI ports broken out to headers. */
 #define BOARD_NR_SPI            1
 
 /* SPI pin numbers. */
-#define BOARD_SPI1_NSS_PIN      20
-#define BOARD_SPI1_MOSI_PIN     23
-#define BOARD_SPI1_MISO_PIN     22
-#define BOARD_SPI1_SCK_PIN      21
+#define BOARD_SPI1_NSS_PIN      15
+#define BOARD_SPI1_MOSI_PIN     18
+#define BOARD_SPI1_MISO_PIN     17
+#define BOARD_SPI1_SCK_PIN      16
 
 /* Total number of GPIO pins that are broken out to headers and
  * intended for use. This includes pins like the LED, button, and
  * debug port (JTAG/SWD) pins. */
-#define BOARD_NR_GPIO_PINS      24
+#define BOARD_NR_GPIO_PINS      19
 
 /* Number of pins capable of PWM output. */
 #define BOARD_NR_PWM_PINS       12
@@ -74,7 +74,7 @@
 /* Number of pins already connected to external hardware.  For Maple,
  * these are just BOARD_LED_PIN, BOARD_BUTTON_PIN, and the debug port
  * pins (see below). */
-#define BOARD_NR_USED_PINS       0
+#define BOARD_NR_USED_PINS       4
 
 /* Debug port pins. 
 #define BOARD_JTMS_SWDIO_PIN    39
@@ -92,9 +92,9 @@
  * enum. These are optional, but recommended. They make it easier to
  * write code using low-level GPIO functionality. */
 enum {
-    PB0, PB1, PB2, PB3, PB4, PB5, PB6, PB7, 
-    PA0, PA1, PA2, PA3, PA8, PA9, PB10, PA11,
-    PA12, PA13, PA14, PA15, PA4, PA5, PA6, PA7,
+    PA0, PA1, PA8, PB2, PA3, PB0, PA11, PA12,
+    PB5, PA10, PA9, PB6, PB7, PB1, PA2, PA4,
+    PA5, PA6, PA7
 };
 
 #endif

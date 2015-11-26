@@ -63,20 +63,6 @@ int rt_application_init(void)
 
 #include "wirish/wirish.h"
 
-int cmd_digitalRead(int argc, char** argv)
-{
-    int ret = 0;
-    int pin;
-    if(argc == 2) {
-        sscanf(argv[1], "%d", &pin);
-        ret = digitalRead((rt_uint8_t)pin);
-    }
-    rt_kprintf("%d\n", ret);
-
-    return ret;
-}
-MSH_CMD_EXPORT_ALIAS(cmd_digitalRead, digitalRead, Read digital pin.);
-
 int cmd_pinMode(int argc, char** argv)
 {
     int pin;
@@ -118,7 +104,21 @@ int cmd_pinMode(int argc, char** argv)
 
     return 0;
 }
-MSH_CMD_EXPORT_ALIAS(cmd_pinMode, pinMode, Setup pin mode.);
+MSH_CMD_EXPORT_ALIAS(cmd_pinMode, pinMode, pinMode pinNum mode.);
+
+int cmd_digitalRead(int argc, char** argv)
+{
+    int ret = 0;
+    int pin;
+    if(argc == 2) {
+        sscanf(argv[1], "%d", &pin);
+        ret = digitalRead((rt_uint8_t)pin);
+    }
+    rt_kprintf("%d\n", ret);
+
+    return ret;
+}
+MSH_CMD_EXPORT_ALIAS(cmd_digitalRead, digitalRead, digitalRead pinNum.);
 
 int cmd_digitalWrite(int argc, char** argv)
 {
@@ -140,7 +140,47 @@ int cmd_digitalWrite(int argc, char** argv)
 
     return 0;
 }
-MSH_CMD_EXPORT_ALIAS(cmd_digitalWrite, digitalWrite, Write digital pin.);
+MSH_CMD_EXPORT_ALIAS(cmd_digitalWrite, digitalWrite, digitalWrite pinNum HIGH/LOW.);
+
+int cmd_togglePin(int argc, char** argv)
+{
+    int pin;
+    if(argc == 2) {
+        sscanf(argv[1], "%d", &pin);
+        togglePin((uint8_t)pin);
+    }
+
+    return 0;
+}
+MSH_CMD_EXPORT_ALIAS(cmd_togglePin, togglePin, togglePin pinNum.);
+
+int cmd_analogRead(int argc, char** argv)
+{
+    int ret = 0;
+    int pin;
+	if(argc == 2) {
+        sscanf(argv[1], "%d", &pin);
+	    ret = analogRead((uint8_t)pin);
+	}
+    rt_kprintf("%d\n", ret);
+
+	return 0;
+}
+MSH_CMD_EXPORT_ALIAS(cmd_analogRead, analogRead, analogRead pinNum.);
+
+int cmd_pwmWrite(int argc, char** argv)
+{
+    int pin;
+    int duty_cycle;
+    if(argc == 3) {
+        sscanf(argv[1], "%d", &pin);
+        sscanf(argv[2], "%d", &duty_cycle);
+        pwmWrite((uint8_t)pin, (uint16_t)duty_cycle);
+    }
+
+    return 0;
+}
+MSH_CMD_EXPORT_ALIAS(cmd_pwmWrite, pwmWrite, pwmWrite pinNum duty_cycle.);
 
 extern void __set_PRIMASK(uint32_t priMask);
 extern void __set_PSP(uint32_t topOfProcStack);

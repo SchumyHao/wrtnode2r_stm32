@@ -146,7 +146,8 @@ void usart_foreach(void (*fn)(usart_dev*)) {
 /*
  * Interrupt handlers.
  */
-
+extern void rt_interrupt_enter(void);
+extern void rt_interrupt_leave(void);
 void USART1_IRQHandler(void) {
     rt_interrupt_enter();
     usart_irq(&usart1_rb, USART1_BASE);

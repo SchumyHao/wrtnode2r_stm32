@@ -94,6 +94,8 @@ void rtthread_startup(void)
     return ;
 }
 
+extern int cplusplus_system_init(void);
+
 int main(void)
 {
     /* C++ global class init */

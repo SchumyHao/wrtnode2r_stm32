@@ -17,6 +17,7 @@ if GetDepend('RT_USING_MAPLE'):
         if os.path.isfile(os.path.join(cwd, item, 'SConscript')):
             src = src + SConscript(os.path.join(item, 'SConscript'))
 
-    group = DefineGroup('libmaple', src, depend = ['RT_USING_MAPLE'], CPPPATH = CPPPATH)
+    CPPDEFINES = ['MCU_STM32F103T8']
+    group = DefineGroup('libmaple', src, depend = ['RT_USING_MAPLE'], CPPPATH = CPPPATH, CPPDEFINES = CPPDEFINES)
 
 Return('group')

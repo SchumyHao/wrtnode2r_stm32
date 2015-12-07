@@ -96,10 +96,8 @@ void rtthread_startup(void)
 
 int main(void)
 {
-#ifndef __CC_ARM
     /* C++ global class init */
     cplusplus_system_init();
-#endif
 
     /* disable interrupt first */
     rt_hw_interrupt_disable();

@@ -1,5 +1,5 @@
 #include <rtthread.h>
-#include <board.h>
+#include <wrtnode2r_board.h>
 
 void rt_platform_init(void)
 {

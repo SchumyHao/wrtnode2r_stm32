@@ -6,13 +6,15 @@ cwd     = os.path.join(str(Dir('#')), 'drivers')
 
 # add the general drivers.
 src = Split("""
-board.c
+wrtnode2r_board.c
 platform.c
 spi_bridge.c
 """)
 
 CPPPATH = [cwd]
 
-group = DefineGroup('Drivers', src, depend = [''], CPPPATH = CPPPATH)
+CPPDEFINES = ['BOOTLOADER_wrtnode']
+
+group = DefineGroup('Drivers', src, depend = [''], CPPPATH = CPPPATH, CPPDEFINES = CPPDEFINES)
 
 Return('group')

@@ -2,7 +2,7 @@
 #include <rtdevice.h>
 #include <rthw.h>
 #include <rtthread.h>
-#include "board.h"
+#include "wrtnode2r_board.h"
 #include "wirish/wirish.h"
 
 #define WRTNODE2R_SPI_CMD_7688_READ_FROM_STM32         (0x01)

@@ -15,7 +15,7 @@
 
 #include <rthw.h>
 #include <rtthread.h>
-#include "board.h"
+#include "wrtnode2r_board.h"
 
 /**
  * @addtogroup STM32

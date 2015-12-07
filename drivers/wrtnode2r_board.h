@@ -10,11 +10,12 @@
  * Change Logs:
  * Date           Author       Notes
  * 2009-09-22     Bernard      add board.h to this bsp
+ * 2015-12-06     Schumy       WRTnode2R board
  */
 
 // <<< Use Configuration Wizard in Context Menu >>>
-#ifndef __BOARD_H__
-#define __BOARD_H__
+#ifndef __WRTNODE2R_BOARD_H__
+#define __WRTNODE2R_BOARD_H__
 
 #include <stdbool.h>
 

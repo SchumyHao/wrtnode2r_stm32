@@ -1,5 +1,5 @@
 /*
- * File      : board.c
+ * File      : wrtnode2r_board.c
  * This file is part of RT-Thread RTOS
  * COPYRIGHT (C) 2006 - 2013 RT-Thread Develop Team
  *
@@ -10,12 +10,12 @@
  * Change Logs:
  * Date           Author       Notes
  * 2009-01-05     Bernard      first implementation
+ * 2015-12-06     Schumy       WRTnode2R board
  */
 
 #include <rthw.h>
 #include <rtthread.h>
-#include "board.h"
-#include "wirish/boards.h"
+#include "wirish/wirish.h"
 
 /*@{*/
 

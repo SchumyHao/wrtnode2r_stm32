@@ -30,11 +30,11 @@ There is an example in the linux.In the windows you can see the rt-thread's docu
 ### Configure the WRTnode-stm32
 
 - Open the wrtnode2r\_stm32/rtconfig.py , change the \
-	 '/Users/schumy/gcc-arm-none-eabi/bin' \ 
+	 '/Users/schumy/gcc-arm-none-eabi/bin' \
 	as "/usr/bin" in the line 16.
 - Open the wrtnode2r\_stm32/SConstruct , \
 	change "/../rtt" as "/../rt-thread" in the line 8.
-	
+
 ### Compile and Clean
 ##### complie
 
@@ -43,3 +43,19 @@ There is an example in the linux.In the windows you can see the rt-thread's docu
 ##### clean
 
 	scons --clean
+
+### Work in MDK5
+##### Install software
+
+	Install python2.7 scons and set PATH in Windows
+
+##### Make MDK5 project
+
+	Open CMD window.
+
+	Set RTT_ROOT path in CMD window by using set RTT_ROOT=xxxx
+
+	Run scons. scons --target=mdk5 -s
+
+	After that, you can open project.uvprojx and start coding.
+

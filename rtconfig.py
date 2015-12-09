@@ -26,6 +26,7 @@ if os.getenv('RTT_EXEC_PATH'):
 
 BUILD = ''
 STM32_TYPE = 'STM32F10X_MD'
+R_VERSION = 'V0.7'
 
 if PLATFORM == 'gcc':
     # toolchains
@@ -55,7 +56,7 @@ if PLATFORM == 'gcc':
     else:
         CFLAGS += ' -Og'
 
-    POST_ACTION = OBJCPY + ' -O binary $TARGET rtthread.bin\n' + SIZE + ' $TARGET \n'
+    POST_ACTION = OBJCPY + ' -O binary $TARGET WRTnode_2r_STM32_rtthread_' + R_VERSION + '.bin\n' + SIZE + ' $TARGET \n'
 
 elif PLATFORM == 'armcc':
     # toolchains

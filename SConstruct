@@ -10,7 +10,7 @@ else:
 sys.path = sys.path + [os.path.join(RTT_ROOT, 'tools')]
 from building import *
 
-TARGET = 'WRTnode_2r_STM32_rtthread.' + rtconfig.TARGET_EXT
+TARGET = 'WRTnode_2r_STM32_rtthread_' + rtconfig.R_VERSION + '.'  + rtconfig.TARGET_EXT
 
 env = Environment(tools = ['mingw'],
 	AS = rtconfig.AS, ASFLAGS = rtconfig.AFLAGS,

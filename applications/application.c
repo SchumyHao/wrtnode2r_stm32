@@ -60,6 +60,15 @@ int rt_application_init(void)
     return 0;
 }
 
+void cmd_2r_version(void)
+{
+#define __W_VERSION(V) #V
+#define W_VERSION(X)   __W_VERSION(X)
+
+    rt_kprintf("%s\n", W_VERSION(WRTNODE2R_VERSION));
+}
+MSH_CMD_EXPORT_ALIAS(cmd_2r_version, 2r_version, get wrtnode2r stm32 version.);
+
 #include "stm32f10x.h"
 
 #if (__ARMCC_VERSION >= 400000)

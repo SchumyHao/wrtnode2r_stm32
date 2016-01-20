@@ -3,5 +3,5 @@
 
 void rt_platform_init(void)
 {
-    wrtnode2r_spi_bridge_init("bridge");
+    spi_bridge_register("bridge");
 }

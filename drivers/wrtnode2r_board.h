@@ -21,7 +21,7 @@
 
 void rt_hw_board_init(void);
 //void rt_hw_usart_init(void);
-void wrtnode2r_spi_bridge_init(const char* name);
+void spi_bridge_register(const char* name);
 
 #define STM32_SRAM_SIZE         20
 #define STM32_SRAM_END          (0x20000000 + STM32_SRAM_SIZE * 1024)

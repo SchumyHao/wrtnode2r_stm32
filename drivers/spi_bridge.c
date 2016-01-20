@@ -5,198 +5,333 @@
 #include "wrtnode2r_board.h"
 #include "wirish/wirish.h"
 
-#define WRTNODE2R_SPI_CMD_7688_READ_FROM_STM32         (0x01)
-#define WRTNODE2R_SPI_CMD_7688_READ_FROM_SRM32_LEN     (0x04)
-#define WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32          (0x10)
-#define WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32_LEN      (0x40)
+/************  SPI Bridge  **************/
+#define SPI_BRIDGE_MAX_DATA_LEN         (1024)
+#define SPI_BRIDGE_ONE_FRAME_MAX_LEN    (255)
 
-#define WRTNODE2R_SPI_CMD_GET_STATUS                   (0xFF)
-#define WRTNODE2R_SPI_STATUS_7688_READ_FROM_STM32_E    (1<<0)
-#define WRTNODE2R_SPI_STATUS_7688_READ_FROM_STM32_NE   (0<<0)
-#define WRTNODE2R_SPI_STATUS_7688_WRITE_TO_STM32_F     (1<<1)
-#define WRTNODE2R_SPI_STATUS_7688_WRITE_TO_STM32_NF    (0<<1)
-#define WRTNODE2R_SPI_STATUS_OK                        (0x80)
+struct spi_bridge {
+	struct rt_device parent;
 
-#define WRTNODE2R_SPI_READ_ALL                         (0xFF)
+	rt_uint8_t read_buf_pool[SPI_BRIDGE_MAX_DATA_LEN];
+	struct rt_ringbuffer read_buf;
 
-/************  WRTnode2r SPI Bridge  **************/
-#define WRTNODE2R_SPI_MAX_DATA_LEN         (1024)
-#define WRTNODE2R_SPI_ONE_FRAME_MAX_LEN    (255)
+	rt_uint8_t write_buf_pool[SPI_BRIDGE_MAX_DATA_LEN];
+	struct rt_ringbuffer write_buf;
 
-struct wrtnode2r_spi_bridge {
-    struct rt_device parent;
+#define SPI_BRIDGE_STATUS_7688_READ_FROM_STM32_E    (1<<0)
+#define SPI_BRIDGE_STATUS_7688_READ_FROM_STM32_NE   (0<<0)
+#define SPI_BRIDGE_STATUS_7688_WRITE_TO_STM32_F     (1<<1)
+#define SPI_BRIDGE_STATUS_7688_WRITE_TO_STM32_NF    (0<<1)
+#define SPI_BRIDGE_STATUS_SET_PARAMETER_ERR         (1<<2)
+#define SPI_BRIDGE_STATUS_SET_PARAMETER_OK          (0<<2)
+#define SPI_BRIDGE_STATUS_CHECK_ERR                 (1<<3)
+#define SPI_BRIDGE_STATUS_CHECK_OK                  (0<<3)
+#define SPI_BRIDGE_STATUS_OK                        (0x50)
+#define SPI_BRIDGE_STATUS_HEAD_MASK                 (0xf0)
+#define SPI_BRIDGE_STATUS_ERR_MASK                  (0x0f)
+#define SPI_BRIDGE_STATUS_NULL                      (0x00)
+	rt_uint8_t status;
 
-    rt_uint8_t read_buf_pool[WRTNODE2R_SPI_MAX_DATA_LEN];
-    struct rt_ringbuffer read_buf;
+#define SPI_BRIDGE_CMD_GET_STATUS                   (1U)
+#define SPI_BRIDGE_CMD_7688_READ_FROM_STM32         (10U)
+#define SPI_BRIDGE_CMD_7688_WRITE_TO_STM32          (20U)
+#define SPI_BRIDGE_CMD_SET_BLOCK_LEN                (30U)
+#define SPI_BRIDGE_CMD_NULL                         (0U)
+	rt_uint8_t cmd;
 
-    rt_uint8_t write_buf_pool[WRTNODE2R_SPI_MAX_DATA_LEN];
-    struct rt_ringbuffer write_buf;
-    rt_uint8_t status;
+	/* status of FSM */
+#define SPI_BRIDGE_FSM_7688_READ_FROM_STM32         (2U)
+#define SPI_BRIDGE_FSM_7688_WRITE_TO_STM32          (3U)
+#define SPI_BRIDGE_FSM_SET_BLOCK_LEN                (4U)
+#define SPI_BRIDGE_FSM_SEND_RESP                    (5U)
+#define SPI_BRIDGE_FSM_SEND_END_RESP                (6U)
+#define SPI_BRIDGE_FSM_NULL                         (0U)
+	rt_uint8_t fsm_status;
+	rt_uint8_t fsm_status_next;
+
+	/* block length */
+#define SPI_BRIDGE_LEN_8_BYTES                      (8U)
+#define SPI_BRIDGE_LEN_16_BYTES                     (16U)
+#define SPI_BRIDGE_LEN_32_BYTES                     (32U)
+	rt_uint8_t len;
+	/* in block length count */
+	rt_uint8_t count;
+	rt_uint8_t* xfet_buf;
+
+	/* Check error flag */
+	bool chk_err;
+	/* Set parameters error flag */
+	bool set_err;
 };
 
-static struct wrtnode2r_spi_bridge spi_bridge;
+static struct spi_bridge spi_bridge;
 
-static inline rt_uint8_t _is_wrtnode2r_spi_stm32_read_buf_empty(void)
+static inline bool _is_stm32_read_buf_empty(void)
 {
-    return (RT_RINGBUFFER_EMPTY == rt_ringbuffer_status(&spi_bridge.read_buf));
+	return (RT_RINGBUFFER_EMPTY == rt_ringbuffer_status(&spi_bridge.read_buf));
 }
 
-static inline rt_uint8_t _is_wrtnode2r_spi_stm32_read_buf_full(void)
+static inline bool _is_stm32_read_buf_full(void)
 {
-    return (RT_RINGBUFFER_FULL == rt_ringbuffer_status(&spi_bridge.read_buf));
+	return (RT_RINGBUFFER_FULL == rt_ringbuffer_status(&spi_bridge.read_buf));
 }
 
-static inline rt_uint8_t _is_wrtnode2r_spi_stm32_write_buf_empty(void)
+static inline bool _is_stm32_write_buf_empty(void)
 {
-    return (RT_RINGBUFFER_EMPTY == rt_ringbuffer_status(&spi_bridge.write_buf));
+	return (RT_RINGBUFFER_EMPTY == rt_ringbuffer_status(&spi_bridge.write_buf));
 }
 
-static inline rt_uint8_t _is_wrtnode2r_spi_stm32_write_buf_full(void)
+static inline bool _is_stm32_write_buf_full(void)
 {
-    return (RT_RINGBUFFER_FULL == rt_ringbuffer_status(&spi_bridge.write_buf));
+	return (RT_RINGBUFFER_FULL == rt_ringbuffer_status(&spi_bridge.write_buf));
 }
 
-static rt_uint8_t wrtnode2r_spi_stm32_get_status(void)
+static inline rt_uint16_t spi_bridge_get_write_buf_len(void)
 {
-    rt_uint8_t wrtnode2r_spi_status = WRTNODE2R_SPI_STATUS_OK;
-
-    if(_is_wrtnode2r_spi_stm32_read_buf_full()) {
-        /* Full! Can not write to stm32 */
-        wrtnode2r_spi_status |= WRTNODE2R_SPI_STATUS_7688_WRITE_TO_STM32_F;
-    }
-
-    if(_is_wrtnode2r_spi_stm32_write_buf_empty()) {
-        /* Can read from stm32 */
-        wrtnode2r_spi_status |= WRTNODE2R_SPI_STATUS_7688_READ_FROM_STM32_E;
-    }
-    return wrtnode2r_spi_status;
+	return rt_ringbuffer_data_len(&spi_bridge.write_buf);
 }
 
-static rt_uint8_t wrtnode2r_spi_stm32_get_write_buf_len(void)
+static inline rt_uint16_t spi_bridge_get_read_buf_len(void)
 {
-    rt_uint16_t len = rt_ringbuffer_data_len(&spi_bridge.write_buf);
-    return (len > WRTNODE2R_SPI_ONE_FRAME_MAX_LEN)? WRTNODE2R_SPI_ONE_FRAME_MAX_LEN: len;
+	return rt_ringbuffer_data_len(&spi_bridge.read_buf);
 }
 
-static rt_uint8_t wrtnode2r_spi_stm32_get_write_buf_data(void)
+static rt_uint8_t spi_bridge_get_status(void)
 {
-    rt_uint8_t ch = 0;
+	rt_uint8_t status = SPI_BRIDGE_STATUS_OK;
 
-    rt_ringbuffer_getchar(&spi_bridge.write_buf, &ch);
-    return ch;
+	if (spi_bridge.len > (SPI_BRIDGE_MAX_DATA_LEN - spi_bridge_get_read_buf_len()))
+		/* Full! Can not write to stm32 */
+		status |= SPI_BRIDGE_STATUS_7688_WRITE_TO_STM32_F;
+
+	if (_is_stm32_write_buf_empty())
+		/* Can read from stm32 */
+		status |= SPI_BRIDGE_STATUS_7688_READ_FROM_STM32_E;
+	if (spi_bridge.chk_err)
+		status |= SPI_BRIDGE_STATUS_CHECK_ERR;
+	if (spi_bridge.set_err)
+		status |= SPI_BRIDGE_STATUS_SET_PARAMETER_ERR;
+
+	return status;
 }
 
-static rt_uint8_t wrtnode2r_spi_stm32_get_read_buf_len(void)
+static rt_err_t spi_bridge_init(rt_device_t dev)
 {
-    return (rt_uint8_t)rt_ringbuffer_data_len(&spi_bridge.read_buf);
+	rt_ringbuffer_init(&spi_bridge.read_buf, spi_bridge.read_buf_pool,
+					   SPI_BRIDGE_MAX_DATA_LEN);
+	rt_ringbuffer_init(&spi_bridge.write_buf, spi_bridge.write_buf_pool,
+					   SPI_BRIDGE_MAX_DATA_LEN);
+	spi_bridge.xfet_buf = rt_malloc(SPI_BRIDGE_LEN_16_BYTES * sizeof(rt_uint8_t));
+	if (spi_bridge.xfet_buf == RT_NULL)
+		return -RT_ENOMEM;
+	spi_bridge.len = SPI_BRIDGE_LEN_16_BYTES;
+
+	return RT_EOK;
 }
 
-static void wrtnode2r_spi_stm32_set_read_buf_data(rt_uint8_t ch)
+static rt_err_t spi_bridge_open(rt_device_t dev, rt_uint16_t oflag)
 {
-    rt_ringbuffer_putchar(&spi_bridge.read_buf, ch);
+	dev->flag = oflag | RT_DEVICE_FLAG_INT_RX;
+	dev->open_flag = oflag & 0xff;
+
+	spi1.beginSlave();
+
+	return RT_EOK;
 }
 
-static rt_err_t wrtnode2r_spi_bridge_open(rt_device_t dev, rt_uint16_t oflag)
+static rt_size_t spi_bridge_read(rt_device_t dev, rt_off_t pos, void* buffer, rt_size_t size)
 {
-    dev->flag = oflag | RT_DEVICE_FLAG_INT_RX;
-    dev->open_flag = oflag & 0xff;
-
-    rt_ringbuffer_init(&spi_bridge.read_buf, spi_bridge.read_buf_pool, WRTNODE2R_SPI_MAX_DATA_LEN);
-    rt_ringbuffer_init(&spi_bridge.write_buf, spi_bridge.write_buf_pool, WRTNODE2R_SPI_MAX_DATA_LEN);
-    spi1.beginSlave();
-
-    return RT_EOK;
+	return rt_ringbuffer_get(&spi_bridge.read_buf, buffer, size);
 }
 
-static rt_size_t wrtnode2r_spi_bridge_read(rt_device_t dev,
-                                           rt_off_t pos,
-                                           void* buffer,
-                                           rt_size_t size)
+static rt_size_t spi_bridge_write(rt_device_t dev, rt_off_t pos, const void* buffer, rt_size_t size)
 {
-    return rt_ringbuffer_get(&spi_bridge.read_buf, buffer, size);
+	return rt_ringbuffer_put(&spi_bridge.write_buf, buffer, size);
 }
 
-static rt_size_t wrtnode2r_spi_bridge_write(rt_device_t dev,
-                                            rt_off_t pos,
-                                            const void* buffer,
-                                            rt_size_t size)
+void spi_bridge_register(const char* name)
 {
-    return rt_ringbuffer_put(&spi_bridge.write_buf, buffer, size);
+	rt_memset(&spi_bridge, 0, sizeof(spi_bridge));
+	/* register device */
+	spi_bridge.parent.type = RT_Device_Class_Miscellaneous;
+	spi_bridge.parent.init = spi_bridge_init;
+	spi_bridge.parent.open = spi_bridge_open;
+	spi_bridge.parent.close = RT_NULL;
+	spi_bridge.parent.read = spi_bridge_read;
+	spi_bridge.parent.write = spi_bridge_write;
+	spi_bridge.parent.control = RT_NULL;
+	/* no private */
+	spi_bridge.parent.user_data = RT_NULL;
+
+	rt_device_register(&spi_bridge.parent, name, RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE);
 }
 
-void wrtnode2r_spi_bridge_init(const char* name)
+static inline bool is_valid_cmd(rt_uint8_t cmd)
 {
-    /* register device */
-    spi_bridge.parent.type           = RT_Device_Class_Miscellaneous;
-    spi_bridge.parent.init           = RT_NULL;
-    spi_bridge.parent.open           = wrtnode2r_spi_bridge_open;
-    spi_bridge.parent.close          = RT_NULL;
-    spi_bridge.parent.read           = wrtnode2r_spi_bridge_read;
-    spi_bridge.parent.write          = wrtnode2r_spi_bridge_write;
-    spi_bridge.parent.control        = RT_NULL;
-    /* no private */
-    spi_bridge.parent.user_data = RT_NULL;
-
-    rt_device_register(&spi_bridge.parent, name, RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE);
+	return ((SPI_BRIDGE_CMD_GET_STATUS == cmd)
+			|| (SPI_BRIDGE_CMD_7688_READ_FROM_STM32 == cmd)
+			|| (SPI_BRIDGE_CMD_7688_WRITE_TO_STM32 == cmd)
+			|| (SPI_BRIDGE_CMD_SET_BLOCK_LEN == cmd));
 }
 
-static void wrtnode2r_spi_bridge_rx_isr(rt_uint8_t cmd, rt_uint8_t is_cmd)
+static inline bool is_valid_len(rt_uint8_t len)
 {
-    if(is_cmd)
-        switch(cmd) {
-            rt_uint8_t ch = 0;
-            case WRTNODE2R_SPI_CMD_GET_STATUS:
-                ch = wrtnode2r_spi_stm32_get_status();
-                spi1.write(ch);
-                break;
-            case WRTNODE2R_SPI_CMD_7688_READ_FROM_SRM32_LEN:
-                ch = wrtnode2r_spi_stm32_get_write_buf_len();
-                spi1.write(ch);
-                break;
-            case WRTNODE2R_SPI_CMD_7688_READ_FROM_STM32:
-                ch = wrtnode2r_spi_stm32_get_write_buf_data();
-                spi1.write(ch);
-                break;
-            case WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32_LEN:
-            case WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32:
-            default:
-                break;
-        }
-    else {
-        rt_uint8_t ch = spi1.read();
-        switch(cmd) {
-            case WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32:
-                wrtnode2r_spi_stm32_set_read_buf_data(ch);
-                if('\n' == ch) {
-                    if(spi_bridge.parent.rx_indicate != RT_NULL) {
-                        spi_bridge.parent.rx_indicate(&spi_bridge.parent, wrtnode2r_spi_stm32_get_read_buf_len());
-                    }
-                }
-                break;
-            case WRTNODE2R_SPI_CMD_GET_STATUS:
-            case WRTNODE2R_SPI_CMD_7688_READ_FROM_SRM32_LEN:
-            case WRTNODE2R_SPI_CMD_7688_WRITE_TO_STM32_LEN:
-            case WRTNODE2R_SPI_CMD_7688_READ_FROM_STM32:
-            default:
-                break;
-        }
-    }
+	return ((SPI_BRIDGE_LEN_8_BYTES == len)
+			|| (SPI_BRIDGE_LEN_16_BYTES == len)
+			|| (SPI_BRIDGE_LEN_32_BYTES == len));
 }
 
-void SPI1_IRQHandler(void) {
-    static rt_uint8_t is_cmd;
-    static rt_uint8_t cmd;
+static inline rt_uint8_t calulate_check(void)
+{
+	int i;
+	rt_uint8_t chk = 0;
+	rt_uint8_t* ptr = spi_bridge.xfet_buf;
+	for (i = spi_bridge.len; i > 0; i--) {
+		chk ^= *ptr++;
+	}
+	return chk;
+}
 
-    rt_interrupt_enter();
-    if(spi_is_rx_nonempty(spi1.c_dev())) {
-        nvic_irq_disable(NVIC_SPI1);
-        if(!is_cmd) {
-            cmd = spi1.read();
-        }
-        is_cmd = !is_cmd;
-        wrtnode2r_spi_bridge_rx_isr(cmd, is_cmd);
-        nvic_irq_enable(NVIC_SPI1);
-    }
-    rt_interrupt_leave();
+static inline void spi_bridge_disable_spi(void)
+{
+	while (spi_is_rx_nonempty(spi1.c_dev()));
+	while (!spi_is_tx_empty(spi1.c_dev()));
+	while (spi_is_busy(spi1.c_dev()));
+
+	spi_disable(spi1.c_dev());
+}
+
+static inline void spi_bridge_enable_spi(void)
+{
+	while (!digitalRead(spi1.nssPin()));
+	spi_enable(spi1.c_dev());
+}
+
+static inline void spi_bridge_send_resp(void)
+{
+	spi_bridge_disable_spi();
+	spi1.write(spi_bridge_get_status());
+	spi_bridge_enable_spi();
+}
+
+static inline rt_size_t spi_bridge_7688_write_to_stm32(const rt_uint8_t* data, rt_uint16_t len)
+{
+	return rt_ringbuffer_put(&spi_bridge.read_buf, data, len);
+}
+
+static inline rt_size_t spi_bridge_7688_read_from_stm32(rt_uint8_t* data, rt_uint16_t len)
+{
+	return rt_ringbuffer_get(&spi_bridge.write_buf, data, len);
+}
+
+static void spi_bridge_rx_isr(rt_uint8_t ch)
+{
+	spi_bridge.fsm_status = spi_bridge.fsm_status_next;
+
+	switch (spi_bridge.fsm_status) {
+	case SPI_BRIDGE_FSM_NULL:
+		if (is_valid_cmd(ch)) {
+			spi_bridge_send_resp();
+			spi_bridge.cmd = ch;
+			spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SEND_RESP;
+		}
+		break;
+	case SPI_BRIDGE_FSM_SEND_RESP:
+		/* write spi data reg first if change to write status */
+		if (SPI_BRIDGE_CMD_SET_BLOCK_LEN == spi_bridge.cmd) {
+			spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SET_BLOCK_LEN;
+		} else if (SPI_BRIDGE_CMD_7688_WRITE_TO_STM32 == spi_bridge.cmd) {
+			if (spi_bridge.status & SPI_BRIDGE_STATUS_7688_WRITE_TO_STM32_F) {
+				spi_bridge.cmd = SPI_BRIDGE_CMD_NULL;
+				spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_NULL;
+				break;
+			}
+			spi_bridge.count = 0;
+			spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_7688_WRITE_TO_STM32;
+		} else if (SPI_BRIDGE_CMD_7688_READ_FROM_STM32 == spi_bridge.cmd) {
+			if (spi_bridge.status & SPI_BRIDGE_STATUS_7688_READ_FROM_STM32_E) {
+				spi_bridge.cmd = SPI_BRIDGE_CMD_NULL;
+				spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_NULL;
+				break;
+			}
+			rt_memset(spi_bridge.xfet_buf, 0, spi_bridge.len * sizeof(rt_uint8_t));
+			spi_bridge_7688_read_from_stm32(spi_bridge.xfet_buf, spi_bridge.len);
+			spi1.write(spi_bridge.xfet_buf[0]);
+			spi_bridge.count = 1;
+			spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_7688_READ_FROM_STM32;
+		} else { /* SPI_BRIDGE_CMD_GET_STATUS */
+			spi_bridge.cmd = SPI_BRIDGE_CMD_NULL;
+			spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_NULL;
+		}
+		break;
+	case SPI_BRIDGE_FSM_SET_BLOCK_LEN:
+		if (!is_valid_len(ch)) {
+			spi_bridge.set_err = true;
+			goto SPI_BRIDGE_FSM_SET_BLOCK_LEN_OUT;
+		}
+		if (ch == spi_bridge.len) {
+			spi_bridge.set_err = false;
+			goto SPI_BRIDGE_FSM_SET_BLOCK_LEN_OUT;
+		}
+		if (spi_bridge.xfet_buf != RT_NULL)
+			rt_free(spi_bridge.xfet_buf);
+		spi_bridge.xfet_buf = rt_malloc(ch * sizeof(rt_uint8_t));
+		if (spi_bridge.xfet_buf == RT_NULL) {
+			spi_bridge.set_err = true;
+			goto SPI_BRIDGE_FSM_SET_BLOCK_LEN_OUT;
+		}
+		spi_bridge.len = ch;
+		spi_bridge.set_err = false;
+SPI_BRIDGE_FSM_SET_BLOCK_LEN_OUT:
+		spi_bridge_send_resp();
+		spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SEND_END_RESP;
+		break;
+	case SPI_BRIDGE_FSM_7688_WRITE_TO_STM32:
+		if (spi_bridge.count < spi_bridge.len) {
+			spi_bridge.xfet_buf[spi_bridge.count++] = ch;
+			break;
+		}
+		if (ch != calulate_check()) {
+			spi_bridge.chk_err = true;
+			goto SPI_BRIDGE_FSM_7688_WRITE_TO_STM32_OUT;
+		}
+		spi_bridge.chk_err = false;
+		spi_bridge_7688_write_to_stm32(spi_bridge.xfet_buf, spi_bridge.len);
+SPI_BRIDGE_FSM_7688_WRITE_TO_STM32_OUT:
+		spi_bridge_send_resp();
+		spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SEND_END_RESP;
+		spi_bridge.count = 0;
+		break;
+	case SPI_BRIDGE_FSM_7688_READ_FROM_STM32:
+		if (spi_bridge.count < spi_bridge.len) {
+			spi1.write(spi_bridge.xfet_buf[spi_bridge.count++]);
+			break;
+		}
+		if (spi_bridge.count++ == spi_bridge.len) {
+			spi1.write(calulate_check());
+			break;
+		}
+		spi_bridge.chk_err = false;
+		spi_bridge_send_resp();
+		spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SEND_END_RESP;
+		spi_bridge.count = 0;
+		break;
+	case SPI_BRIDGE_FSM_SEND_END_RESP:
+	default:
+		spi_bridge.cmd = SPI_BRIDGE_CMD_NULL;
+		spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_NULL;
+		break;
+	}
+}
+
+void SPI1_IRQHandler(void)
+{
+	rt_interrupt_enter();
+	if (spi_is_rx_nonempty(spi1.c_dev())) {
+		nvic_irq_disable(NVIC_SPI1);
+		spi_bridge_rx_isr(spi1.read());
+		nvic_irq_enable(NVIC_SPI1);
+	}
+	rt_interrupt_leave();
 }
 

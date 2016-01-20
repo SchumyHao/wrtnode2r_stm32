@@ -334,6 +334,24 @@ static inline uint8 spi_is_enabled(spi_dev *dev) {
 }
 
 /**
+ * @brief Set SPI peripheral enable.
+ * @param dev SPI device
+ * @return NULL.
+ */
+static inline void spi_enable(spi_dev *dev) {
+    dev->regs->CR1 |= SPI_CR1_SPE_BIT;
+}
+
+/**
+ * @brief Set SPI peripheral disable.
+ * @param dev SPI device
+ * @return NULL.
+ */
+static inline void spi_disable(spi_dev *dev) {
+    dev->regs->CR1 &= ~SPI_CR1_SPE_BIT;
+}
+
+/**
  * @brief Disable all SPI peripherals
  */
 static inline void spi_peripheral_disable_all(void) {

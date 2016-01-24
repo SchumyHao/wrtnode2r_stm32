@@ -45,6 +45,7 @@ struct spi_bridge {
 #define SPI_BRIDGE_FSM_SET_BLOCK_LEN                (4U)
 #define SPI_BRIDGE_FSM_SEND_RESP                    (5U)
 #define SPI_BRIDGE_FSM_SEND_END_RESP                (6U)
+#define SPI_BRIDGE_FSM_RECV_END_RESP                (7U)
 #define SPI_BRIDGE_FSM_NULL                         (0U)
 	rt_uint8_t fsm_status;
 	rt_uint8_t fsm_status_next;
@@ -96,6 +97,37 @@ static inline rt_uint16_t spi_bridge_get_read_buf_len(void)
 	return rt_ringbuffer_data_len(&spi_bridge.read_buf);
 }
 
+static inline bool _is_spi_bridge_status_head_ok(uint8_t status)
+{
+	return (status & SPI_BRIDGE_STATUS_HEAD_MASK) == SPI_BRIDGE_STATUS_OK;
+}
+
+static inline bool _can_spi_bridge_status_read(uint8_t status)
+{
+	return !(status & SPI_BRIDGE_STATUS_7688_READ_FROM_STM32_E);
+}
+
+static inline bool _can_spi_bridge_status_write(uint8_t status)
+{
+	return !(status & SPI_BRIDGE_STATUS_7688_WRITE_TO_STM32_F);
+}
+
+static inline bool _is_spi_bridge_status_set_ok(uint8_t status)
+{
+	return !(status & SPI_BRIDGE_STATUS_SET_PARAMETER_ERR);
+}
+
+static inline bool _is_spi_bridge_status_check_ok(uint8_t status)
+{
+	return !(status & SPI_BRIDGE_STATUS_CHECK_ERR);
+}
+
+static inline bool _is_spi_bridge_status_ok(uint8_t status)
+{
+	return !(status & SPI_BRIDGE_STATUS_ERR_MASK);
+}
+
+
 static rt_uint8_t spi_bridge_get_status(void)
 {
 	rt_uint8_t status = SPI_BRIDGE_STATUS_OK;
@@ -121,6 +153,7 @@ static rt_err_t spi_bridge_init(rt_device_t dev)
 					   SPI_BRIDGE_MAX_DATA_LEN);
 	rt_ringbuffer_init(&spi_bridge.write_buf, spi_bridge.write_buf_pool,
 					   SPI_BRIDGE_MAX_DATA_LEN);
+	/* default spi_bridge len is 16 */
 	spi_bridge.xfet_buf = rt_malloc(SPI_BRIDGE_LEN_16_BYTES * sizeof(rt_uint8_t));
 	if (spi_bridge.xfet_buf == RT_NULL)
 		return -RT_ENOMEM;
@@ -134,7 +167,7 @@ static rt_err_t spi_bridge_open(rt_device_t dev, rt_uint16_t oflag)
 	dev->flag = oflag | RT_DEVICE_FLAG_INT_RX;
 	dev->open_flag = oflag & 0xff;
 
-	spi1.beginSlave();
+	spi1.beginSlave_order_mode(MSBFIRST, SPI_MODE_1);
 
 	return RT_EOK;
 }
@@ -192,26 +225,27 @@ static inline rt_uint8_t calulate_check(void)
 	return chk;
 }
 
-static inline void spi_bridge_disable_spi(void)
+static inline void spi_bridge_disable_spi_int(void)
 {
-	while (spi_is_rx_nonempty(spi1.c_dev()));
-	while (!spi_is_tx_empty(spi1.c_dev()));
-	while (spi_is_busy(spi1.c_dev()));
-
-	spi_disable(spi1.c_dev());
+	spi_irq_disable(spi1.c_dev(), SPI_CR2_RXNEIE);
 }
 
-static inline void spi_bridge_enable_spi(void)
+static inline void spi_bridge_enable_spi_int(void)
 {
-	while (!digitalRead(spi1.nssPin()));
-	spi_enable(spi1.c_dev());
+	spi_irq_enable(spi1.c_dev(), SPI_CR2_RXNEIE);
 }
 
-static inline void spi_bridge_send_resp(void)
+static inline void spi_bridge_send_ch(rt_uint8_t ch)
 {
-	spi_bridge_disable_spi();
-	spi1.write(spi_bridge_get_status());
-	spi_bridge_enable_spi();
+	spi_bridge_disable_spi_int();
+	spi1.write(ch);
+	log_text[pos++] = ch;
+	spi_bridge_enable_spi_int();
+}
+
+static inline void spi_bridge_send_resp(rt_uint8_t resp)
+{
+	spi_bridge_send_ch(resp);
 }
 
 static inline rt_size_t spi_bridge_7688_write_to_stm32(const rt_uint8_t* data, rt_uint16_t len)
@@ -231,17 +265,25 @@ static void spi_bridge_rx_isr(rt_uint8_t ch)
 	switch (spi_bridge.fsm_status) {
 	case SPI_BRIDGE_FSM_NULL:
 		if (is_valid_cmd(ch)) {
-			spi_bridge_send_resp();
+			spi_bridge.status = spi_bridge_get_status();
+			spi_bridge_send_resp(spi_bridge.status);
 			spi_bridge.cmd = ch;
-			spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SEND_RESP;
+			if (SPI_BRIDGE_CMD_GET_STATUS == ch)
+				spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SEND_END_RESP;
+			else
+				spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SEND_RESP;
+		} else {
+			spi_bridge_send_ch(0);
 		}
 		break;
 	case SPI_BRIDGE_FSM_SEND_RESP:
 		/* write spi data reg first if change to write status */
 		if (SPI_BRIDGE_CMD_SET_BLOCK_LEN == spi_bridge.cmd) {
 			spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SET_BLOCK_LEN;
+			spi_bridge_send_ch(0);
 		} else if (SPI_BRIDGE_CMD_7688_WRITE_TO_STM32 == spi_bridge.cmd) {
-			if (spi_bridge.status & SPI_BRIDGE_STATUS_7688_WRITE_TO_STM32_F) {
+			spi_bridge_send_ch(0);
+			if (!_can_spi_bridge_status_write(spi_bridge.status)) {
 				spi_bridge.cmd = SPI_BRIDGE_CMD_NULL;
 				spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_NULL;
 				break;
@@ -249,19 +291,17 @@ static void spi_bridge_rx_isr(rt_uint8_t ch)
 			spi_bridge.count = 0;
 			spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_7688_WRITE_TO_STM32;
 		} else if (SPI_BRIDGE_CMD_7688_READ_FROM_STM32 == spi_bridge.cmd) {
-			if (spi_bridge.status & SPI_BRIDGE_STATUS_7688_READ_FROM_STM32_E) {
+			if (!_can_spi_bridge_status_read(spi_bridge.status)) {
 				spi_bridge.cmd = SPI_BRIDGE_CMD_NULL;
 				spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_NULL;
+				spi_bridge_send_ch(0);
 				break;
 			}
 			rt_memset(spi_bridge.xfet_buf, 0, spi_bridge.len * sizeof(rt_uint8_t));
 			spi_bridge_7688_read_from_stm32(spi_bridge.xfet_buf, spi_bridge.len);
-			spi1.write(spi_bridge.xfet_buf[0]);
+			spi_bridge_send_ch(spi_bridge.xfet_buf[0]);
 			spi_bridge.count = 1;
 			spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_7688_READ_FROM_STM32;
-		} else { /* SPI_BRIDGE_CMD_GET_STATUS */
-			spi_bridge.cmd = SPI_BRIDGE_CMD_NULL;
-			spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_NULL;
 		}
 		break;
 	case SPI_BRIDGE_FSM_SET_BLOCK_LEN:
@@ -283,11 +323,13 @@ static void spi_bridge_rx_isr(rt_uint8_t ch)
 		spi_bridge.len = ch;
 		spi_bridge.set_err = false;
 SPI_BRIDGE_FSM_SET_BLOCK_LEN_OUT:
-		spi_bridge_send_resp();
+		spi_bridge.status = spi_bridge_get_status();
+		spi_bridge_send_resp(spi_bridge.status);
 		spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SEND_END_RESP;
 		break;
 	case SPI_BRIDGE_FSM_7688_WRITE_TO_STM32:
 		if (spi_bridge.count < spi_bridge.len) {
+			spi_bridge_send_ch(0);
 			spi_bridge.xfet_buf[spi_bridge.count++] = ch;
 			break;
 		}
@@ -297,25 +339,32 @@ SPI_BRIDGE_FSM_SET_BLOCK_LEN_OUT:
 		}
 		spi_bridge.chk_err = false;
 		spi_bridge_7688_write_to_stm32(spi_bridge.xfet_buf, spi_bridge.len);
+		if (spi_bridge.parent.rx_indicate != RT_NULL)
+			spi_bridge.parent.rx_indicate(&spi_bridge.parent, spi_bridge_get_read_buf_len());
 SPI_BRIDGE_FSM_7688_WRITE_TO_STM32_OUT:
-		spi_bridge_send_resp();
+		spi_bridge.status = spi_bridge_get_status();
+		spi_bridge_send_resp(spi_bridge.status);
 		spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SEND_END_RESP;
 		spi_bridge.count = 0;
 		break;
 	case SPI_BRIDGE_FSM_7688_READ_FROM_STM32:
 		if (spi_bridge.count < spi_bridge.len) {
-			spi1.write(spi_bridge.xfet_buf[spi_bridge.count++]);
+			spi_bridge_send_ch(spi_bridge.xfet_buf[spi_bridge.count++]);
 			break;
 		}
 		if (spi_bridge.count++ == spi_bridge.len) {
-			spi1.write(calulate_check());
+			spi_bridge_send_ch(calulate_check());
 			break;
 		}
-		spi_bridge.chk_err = false;
-		spi_bridge_send_resp();
-		spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SEND_END_RESP;
+		spi_bridge_send_ch(0);
+		spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_RECV_END_RESP;
 		spi_bridge.count = 0;
 		break;
+	case SPI_BRIDGE_FSM_RECV_END_RESP:
+		if (!_is_spi_bridge_status_head_ok(ch) ||
+			!_is_spi_bridge_status_check_ok(ch)) {
+			spi_bridge.status |= SPI_BRIDGE_STATUS_CHECK_ERR;
+		}
 	case SPI_BRIDGE_FSM_SEND_END_RESP:
 	default:
 		spi_bridge.cmd = SPI_BRIDGE_CMD_NULL;

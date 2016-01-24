@@ -227,25 +227,24 @@ static inline rt_uint8_t calulate_check(void)
 
 static inline void spi_bridge_disable_spi_int(void)
 {
+	nvic_irq_disable(NVIC_SPI1);
 	spi_irq_disable(spi1.c_dev(), SPI_CR2_RXNEIE);
 }
 
 static inline void spi_bridge_enable_spi_int(void)
 {
 	spi_irq_enable(spi1.c_dev(), SPI_CR2_RXNEIE);
+	nvic_irq_enable(NVIC_SPI1);
 }
 
 static inline void spi_bridge_send_ch(rt_uint8_t ch)
 {
-	spi_bridge_disable_spi_int();
 	spi1.write(ch);
-	log_text[pos++] = ch;
-	spi_bridge_enable_spi_int();
 }
 
 static inline void spi_bridge_send_resp(rt_uint8_t resp)
 {
-	spi_bridge_send_ch(resp);
+	spi1.write(resp);
 }
 
 static inline rt_size_t spi_bridge_7688_write_to_stm32(const rt_uint8_t* data, rt_uint16_t len)
@@ -377,9 +376,9 @@ void SPI1_IRQHandler(void)
 {
 	rt_interrupt_enter();
 	if (spi_is_rx_nonempty(spi1.c_dev())) {
-		nvic_irq_disable(NVIC_SPI1);
+		spi_bridge_disable_spi_int();
 		spi_bridge_rx_isr(spi1.read());
-		nvic_irq_enable(NVIC_SPI1);
+		spi_bridge_enable_spi_int();
 	}
 	rt_interrupt_leave();
 }

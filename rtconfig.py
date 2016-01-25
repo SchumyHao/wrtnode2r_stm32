@@ -51,10 +51,10 @@ if PLATFORM == 'gcc':
     LPATH = ''
 
     if BUILD == 'debug':
-        CFLAGS += ' -Og -gdwarf-2'
+        CFLAGS += ' -g -O0 -gdwarf-2'
         AFLAGS += ' -gdwarf-2'
     else:
-        CFLAGS += ' -Og'
+        CFLAGS += ' -O2'
 
     POST_ACTION = OBJCPY + ' -O binary $TARGET WRTnode_2r_STM32_rtthread_' + R_VERSION + '.bin\n' + SIZE + ' $TARGET \n'
 

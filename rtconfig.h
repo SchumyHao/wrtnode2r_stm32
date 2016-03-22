@@ -40,7 +40,7 @@
 #define RT_USING_EVENT
 
 /* Using MailBox */
-//#define RT_USING_MAILBOX
+#define RT_USING_MAILBOX
 
 /* Using Message Queue */
 //#define RT_USING_MESSAGEQUEUE

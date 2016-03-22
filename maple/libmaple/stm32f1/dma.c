@@ -361,31 +361,31 @@ void dma_setup_transfer(dma_dev       *dev,
  * IRQ handlers
  */
 
-void __irq_dma1_channel1(void) {
+void DMA1_Channel1_IRQHandler(void) {
     dma_irq_handler(DMA1, DMA_CH1);
 }
 
-void __irq_dma1_channel2(void) {
+void DMA1_Channel2_IRQHandler(void) {
     dma_irq_handler(DMA1, DMA_CH2);
 }
 
-void __irq_dma1_channel3(void) {
+void DMA1_Channel3_IRQHandler(void) {
     dma_irq_handler(DMA1, DMA_CH3);
 }
 
-void __irq_dma1_channel4(void) {
+void DMA1_Channel4_IRQHandler(void) {
     dma_irq_handler(DMA1, DMA_CH4);
 }
 
-void __irq_dma1_channel5(void) {
+void DMA1_Channel5_IRQHandler(void) {
     dma_irq_handler(DMA1, DMA_CH5);
 }
 
-void __irq_dma1_channel6(void) {
+void DMA1_Channel6_IRQHandler(void) {
     dma_irq_handler(DMA1, DMA_CH6);
 }
 
-void __irq_dma1_channel7(void) {
+void DMA1_Channel7_IRQHandler(void) {
     dma_irq_handler(DMA1, DMA_CH7);
 }
 

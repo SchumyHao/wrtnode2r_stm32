@@ -388,12 +388,16 @@ static inline void spi_bridge_disable_spi_tx_dma(void)
 static inline bool spi_bridge_cmd_prepare(rt_uint8_t cmd)
 {
 	spi_bridge.status = spi_bridge_get_status();
-	if ((cmd == SPI_BRIDGE_CMD_7688_WRITE_TO_STM32) &&
-		_can_spi_bridge_status_write(spi_bridge.status)) {
+	if (cmd == SPI_BRIDGE_CMD_7688_WRITE_TO_STM32) {
+		if (!_can_spi_bridge_status_write(spi_bridge.status))
+			/* stm32 rx buf full, just return status */
+			return true;
 		if (spi_bridge_set_dma_rx() < 0)
 			return false;
-	} else if ((cmd == SPI_BRIDGE_CMD_7688_READ_FROM_STM32) &&
-			   _can_spi_bridge_status_read(spi_bridge.status)) {
+	} else if (cmd == SPI_BRIDGE_CMD_7688_READ_FROM_STM32) {
+		if (!_can_spi_bridge_status_read(spi_bridge.status))
+			/* stm32 tx buf empty, just return status */
+			return true;
 		rt_memset(spi_bridge.xfet_buf, 0, spi_bridge.len * sizeof(rt_uint8_t));
 		spi_bridge_7688_read_from_stm32(spi_bridge.xfet_buf, spi_bridge.len);
 		spi_bridge.xfet_buf[spi_bridge.len] = calulate_check();
@@ -428,7 +432,9 @@ static void spi_bridge_entry(void* parameter)
 			if (is_valid_cmd(ch) && spi_bridge_cmd_prepare(ch)) {
 				spi_bridge_send_resp(spi_bridge.status);
 				spi_bridge.cmd = ch;
-				if (SPI_BRIDGE_CMD_GET_STATUS == ch)
+				if ((SPI_BRIDGE_CMD_GET_STATUS == ch) ||
+					((SPI_BRIDGE_CMD_7688_WRITE_TO_STM32 == ch) && (!_can_spi_bridge_status_write(spi_bridge.status))) ||
+					((SPI_BRIDGE_CMD_7688_READ_FROM_STM32 == ch) && (!_can_spi_bridge_status_read(spi_bridge.status))))
 					spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SEND_END_RESP;
 				else
 					spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_SEND_RESP;

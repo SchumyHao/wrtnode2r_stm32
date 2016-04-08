@@ -481,7 +481,7 @@ SPI_BRIDGE_FSM_SET_BLOCK_LEN_OUT:
 		case SPI_BRIDGE_FSM_7688_WRITE_TO_STM32:
 			spi_bridge_disable_spi_rx_dma();
 			spi_bridge_enable_spi_rx_int();
-			if (ch != 0) {
+			if (ch != 0) { /* DMA wrong */
 				spi_bridge.cmd = SPI_BRIDGE_CMD_NULL;
 				spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_NULL;
 				break;
@@ -501,12 +501,12 @@ SPI_BRIDGE_FSM_SET_BLOCK_LEN_OUT:
 			spi_bridge_disable_spi_tx_dma();
 			spi_bridge_recv_ch();
 			spi_bridge_enable_spi_rx_int();
-			if (ch != 0) {
+			if (ch != 0) { /* DMA wrong */
 				spi_bridge.cmd = SPI_BRIDGE_CMD_NULL;
 				spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_NULL;
 				break;
 			}
-			spi_bridge_send_ch(0);
+			spi_bridge_send_ch(0); /* for 7688 resp */
 			spi_bridge.fsm_status_next = SPI_BRIDGE_FSM_RECV_END_RESP;
 			break;
 		case SPI_BRIDGE_FSM_RECV_END_RESP:

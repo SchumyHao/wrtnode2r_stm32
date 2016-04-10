@@ -24,9 +24,9 @@ elif CROSS_TOOL == 'iar':
 if os.getenv('RTT_EXEC_PATH'):
         EXEC_PATH = os.getenv('RTT_EXEC_PATH')
 
-BUILD = ''
+BUILD = 'debug'
 STM32_TYPE = 'STM32F10X_MD'
-R_VERSION = 'V0.7'
+R_VERSION = 'V0.9'
 
 if PLATFORM == 'gcc':
     # toolchains
@@ -51,7 +51,7 @@ if PLATFORM == 'gcc':
     LPATH = ''
 
     if BUILD == 'debug':
-        CFLAGS += ' -g -O0 -gdwarf-2'
+        CFLAGS += ' -g -Og -gdwarf-2'
         AFLAGS += ' -gdwarf-2'
     else:
         CFLAGS += ' -O2'

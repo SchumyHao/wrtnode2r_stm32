@@ -280,7 +280,8 @@ static inline void spi_bridge_send_resp(rt_uint8_t resp)
 
 static inline rt_size_t spi_bridge_7688_write_to_stm32(const rt_uint8_t* data, rt_uint16_t len)
 {
-	return rt_ringbuffer_put(&spi_bridge.read_buf, data, len);
+	rt_size_t data_len = rt_strlen(data);
+	return rt_ringbuffer_put(&spi_bridge.read_buf, data, (data_len < len)? data_len: len);
 }
 
 static inline rt_size_t spi_bridge_7688_read_from_stm32(rt_uint8_t* data, rt_uint16_t len)
